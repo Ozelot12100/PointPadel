@@ -13,3 +13,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Reforzar exclusión de carpetas y archivos comunes
+.idea/
+*.iml
+*.log
+build/
+app/build/
+captures/
+.gradle/
+.externalNativeBuild/
+.cxx/
+local.properties
+.DS_Store
