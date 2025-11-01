@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -21,10 +20,21 @@ import com.pointpadel.app.ui.theme.PadelSecondaryBlue
 
 @Composable
 fun MarcadorScreen(
+    jugadorA: String,
+    jugadorB: String,
+    jugadorQueSacaPrimero: String,
     onNavigateToHistorial: () -> Unit,
+    onNavigateBack: () -> Unit,
     viewModel: MarcadorViewModel = hiltViewModel()
 ) {
     val state = viewModel.state
+
+    // Inicializar el partido cuando se entra a la pantalla
+    LaunchedEffect(jugadorA, jugadorB, jugadorQueSacaPrimero) {
+        if (!state.partidoIniciado) {
+            viewModel.iniciarPartido(jugadorA, jugadorB, jugadorQueSacaPrimero)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -40,173 +50,21 @@ fun MarcadorScreen(
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-
-        if (!state.partidoIniciado) {
-            ConfiguracionPartido(
-                onIniciarPartido = { jugadorA, jugadorB ->
-                    viewModel.iniciarPartido(jugadorA, jugadorB)
-                }
-            )
-        } else {
-            MarcadorPartido(
-                state = state,
-                onPuntoA = { viewModel.sumarPuntoA() },
-                onPuntoB = { viewModel.sumarPuntoB() },
-                onRestarPuntoA = { viewModel.restarPuntoA() },
-                onRestarPuntoB = { viewModel.restarPuntoB() },
-                onGuardarPartido = {
-                    viewModel.guardarPartido()
-                    viewModel.reiniciarPartido()
-                },
-                onReiniciarPartido = { viewModel.reiniciarPartido() }
-            )
-        }
-
-        // Botón de historial mejorado
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = PadelSecondaryBlue
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-        ) {
-            Button(
-                onClick = onNavigateToHistorial,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent
-                )
-            ) {
-                Text(
-                    "📊 Ver Historial",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ConfiguracionPartido(
-    onIniciarPartido: (String, String) -> Unit
-) {
-    var jugadorA by remember { mutableStateOf("") }
-    var jugadorB by remember { mutableStateOf("") }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "⚡ Nuevo Partido",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = PadelPrimaryGreen,
-                modifier = Modifier.padding(bottom = 20.dp)
-            )
-
-            // Campos de entrada mejorados
-            OutlinedTextField(
-                value = jugadorA,
-                onValueChange = { jugadorA = it },
-                label = { Text("🎾 Jugador A", fontWeight = FontWeight.Medium) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PadelPrimaryGreen,
-                    focusedLabelColor = PadelPrimaryGreen
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            OutlinedTextField(
-                value = jugadorB,
-                onValueChange = { jugadorB = it },
-                label = { Text("🏆 Jugador B", fontWeight = FontWeight.Medium) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PadelPrimaryGreen,
-                    focusedLabelColor = PadelPrimaryGreen
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            // Información del formato mejorada
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = PadelAccentOrange.copy(alpha = 0.1f)
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "📋 FORMATO DEL PARTIDO",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = PadelAccentOrange,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = "🥇 Gana quien alcance 2 sets",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "⚔️ Máximo 3 sets por partido (2-0 o 2-1)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-
-            // Botón de inicio mejorado
-            Button(
-                onClick = {
-                    onIniciarPartido(jugadorA, jugadorB)
-                },
-                enabled = jugadorA.isNotBlank() && jugadorB.isNotBlank(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PadelPrimaryGreen,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                shape = RoundedCornerShape(16.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-            ) {
-                Text(
-                    "🚀 INICIAR PARTIDO",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+        MarcadorPartido(
+            state = state,
+            onPuntoA = { viewModel.sumarPuntoA() },
+            onPuntoB = { viewModel.sumarPuntoB() },
+            onDeshacerAccion = { viewModel.deshacerUltimaAccion() },
+            onGuardarPartido = {
+                viewModel.guardarPartido()
+                onNavigateBack()
+            },
+            onReiniciarPartido = {
+                viewModel.reiniciarPartido()
+                onNavigateBack()
+            },
+            onNavigateToHistorial = onNavigateToHistorial
+        )
     }
 }
 
@@ -215,10 +73,10 @@ private fun MarcadorPartido(
     state: MarcadorState,
     onPuntoA: () -> Unit,
     onPuntoB: () -> Unit,
-    onRestarPuntoA: () -> Unit,
-    onRestarPuntoB: () -> Unit,
+    onDeshacerAccion: () -> Unit,
     onGuardarPartido: () -> Unit,
-    onReiniciarPartido: () -> Unit
+    onReiniciarPartido: () -> Unit,
+    onNavigateToHistorial: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -362,7 +220,6 @@ private fun MarcadorPartido(
                 // Jugador A Score
                 ScoreDisplay(
                     score = state.puntosTextoA,
-                    playerName = state.jugadorA_nombre,
                     isSpecialState = state.esPuntoDeOro || state.enTieBreak
                 )
 
@@ -417,124 +274,97 @@ private fun MarcadorPartido(
                 // Jugador B Score
                 ScoreDisplay(
                     score = state.puntosTextoB,
-                    playerName = state.jugadorB_nombre,
                     isSpecialState = state.esPuntoDeOro || state.enTieBreak
                 )
             }
         }
 
         if (!state.partidoTerminado) {
-            // Botones para sumar puntos - diseño mejorado
+            // Botones para sumar puntos
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Columna Jugador A
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Botón Jugador A
+                Button(
+                    onClick = onPuntoA,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(60.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PadelPrimaryGreen
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
-                    Button(
-                        onClick = onPuntoA,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PadelPrimaryGreen
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                "+1",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                state.jugadorA_nombre,
-                                fontSize = 12.sp,
-                                maxLines = 1
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = onRestarPuntoA,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PadelAccentOrange
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "↶ -1",
-                            fontSize = 14.sp,
+                            "+1 PUNTO",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            state.jugadorA_nombre,
+                            fontSize = 12.sp,
+                            maxLines = 1
                         )
                     }
                 }
 
-                // Columna Jugador B
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Botón Jugador B
+                Button(
+                    onClick = onPuntoB,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(60.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PadelPrimaryGreen
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
-                    Button(
-                        onClick = onPuntoB,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PadelPrimaryGreen
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                "+1",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                state.jugadorB_nombre,
-                                fontSize = 12.sp,
-                                maxLines = 1
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = onRestarPuntoB,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PadelAccentOrange
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "↶ -1",
-                            fontSize = 14.sp,
+                            "+1 PUNTO",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            state.jugadorB_nombre,
+                            fontSize = 12.sp,
+                            maxLines = 1
                         )
                     }
                 }
             }
+
+            // Botón de deshacer
+            if (state.puedeDeshacer) {
+                Button(
+                    onClick = onDeshacerAccion,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PadelAccentOrange
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        "⏪ DESHACER ÚLTIMA ACCIÓN",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         } else {
-            // Partido terminado - diseño mejorado
+            // Partido terminado
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -650,6 +480,34 @@ private fun MarcadorPartido(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Botón de historial
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = PadelSecondaryBlue
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Button(
+                onClick = onNavigateToHistorial,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                )
+            ) {
+                Text(
+                    "📊 Ver Historial",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
     }
 }
 
@@ -677,7 +535,6 @@ private fun SetDisplay(setName: String, scoreA: Int, scoreB: Int) {
 @Composable
 private fun ScoreDisplay(
     score: String,
-    playerName: String,
     isSpecialState: Boolean
 ) {
     Card(

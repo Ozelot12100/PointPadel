@@ -1,5 +1,14 @@
 package com.pointpadel.app.ui.screens.marcador
 
+// Clase para representar acciones que se pueden deshacer
+sealed class AccionPartido {
+    data class PuntoAnotado(val jugador: String, val estadoAnterior: MarcadorState) : AccionPartido()
+    data class JuegoGanado(val jugador: String, val estadoAnterior: MarcadorState) : AccionPartido()
+    data class SetGanado(val jugador: String, val estadoAnterior: MarcadorState) : AccionPartido()
+    data class TieBreakIniciado(val estadoAnterior: MarcadorState) : AccionPartido()
+    data class TieBreakTerminado(val jugador: String, val estadoAnterior: MarcadorState) : AccionPartido()
+}
+
 data class MarcadorState(
     val jugadorA_nombre: String = "",
     val jugadorB_nombre: String = "",
@@ -33,7 +42,11 @@ data class MarcadorState(
     val enTieBreak: Boolean = false,
     val puntosTieBreakA: Int = 0,
     val puntosTieBreakB: Int = 0,
-    val contadorSaquesTieBreak: Int = 0 // Para controlar rotación de saques en tie-break
+    val contadorSaquesTieBreak: Int = 0, // Para controlar rotación de saques en tie-break
+
+    // Sistema de deshacer
+    val historialAcciones: List<AccionPartido> = emptyList(),
+    val puedeDeshacer: Boolean = false
 ) {
     // Sets ganados por cada jugador
     val setsGanadosA: Int

@@ -21,19 +21,57 @@ class MarcadorViewModel @Inject constructor(
 
     fun iniciarPartido(
         jugadorA: String,
-        jugadorB: String
+        jugadorB: String,
+        jugadorQueSacaPrimero: String
     ) {
         state = state.copy(
             jugadorA_nombre = jugadorA,
             jugadorB_nombre = jugadorB,
             partidoIniciado = true,
             tiempoInicio = System.currentTimeMillis(),
-            jugadorQueSaca = "A" // Jugador A siempre empieza sacando
+            jugadorQueSaca = jugadorQueSacaPrimero,
+            historialAcciones = emptyList(),
+            puedeDeshacer = false
         )
+    }
+
+    private fun guardarAccion(accion: AccionPartido) {
+        val nuevasAcciones = state.historialAcciones + accion
+        state = state.copy(
+            historialAcciones = nuevasAcciones.takeLast(10), // Límite de 10 acciones
+            puedeDeshacer = true
+        )
+    }
+
+    fun deshacerUltimaAccion() {
+        if (!state.puedeDeshacer || state.partidoTerminado) return
+
+        val ultimaAccion = state.historialAcciones.lastOrNull()
+        if (ultimaAccion != null) {
+            // Restaurar el estado anterior
+            val estadoAnterior = when (ultimaAccion) {
+                is AccionPartido.PuntoAnotado -> ultimaAccion.estadoAnterior
+                is AccionPartido.JuegoGanado -> ultimaAccion.estadoAnterior
+                is AccionPartido.SetGanado -> ultimaAccion.estadoAnterior
+                is AccionPartido.TieBreakIniciado -> ultimaAccion.estadoAnterior
+                is AccionPartido.TieBreakTerminado -> ultimaAccion.estadoAnterior
+            }
+
+            // Actualizar el historial quitando la última acción
+            val nuevasAcciones = state.historialAcciones.dropLast(1)
+
+            state = estadoAnterior.copy(
+                historialAcciones = nuevasAcciones,
+                puedeDeshacer = nuevasAcciones.isNotEmpty()
+            )
+        }
     }
 
     fun sumarPuntoA() {
         if (state.partidoTerminado) return
+
+        // Guardar estado actual antes de hacer cambios
+        val estadoAnterior = state.copy()
 
         if (state.enTieBreak) {
             sumarPuntoTieBreak("A")
@@ -41,10 +79,16 @@ class MarcadorViewModel @Inject constructor(
             val nuevoState = state.copy(puntosA = state.puntosA + 1)
             verificarJuego(nuevoState, jugadorQueAnoto = "A")
         }
+
+        // Guardar la acción después del cambio
+        guardarAccion(AccionPartido.PuntoAnotado("A", estadoAnterior))
     }
 
     fun sumarPuntoB() {
         if (state.partidoTerminado) return
+
+        // Guardar estado actual antes de hacer cambios
+        val estadoAnterior = state.copy()
 
         if (state.enTieBreak) {
             sumarPuntoTieBreak("B")
@@ -52,6 +96,9 @@ class MarcadorViewModel @Inject constructor(
             val nuevoState = state.copy(puntosB = state.puntosB + 1)
             verificarJuego(nuevoState, jugadorQueAnoto = "B")
         }
+
+        // Guardar la acción después del cambio
+        guardarAccion(AccionPartido.PuntoAnotado("B", estadoAnterior))
     }
 
     private fun verificarJuego(nuevoState: MarcadorState, jugadorQueAnoto: String) {
@@ -74,6 +121,9 @@ class MarcadorViewModel @Inject constructor(
     }
 
     private fun ganarJuego(jugador: String) {
+        // Guardar estado antes del cambio
+        val estadoAnterior = state.copy()
+
         // Actualizar el marcador de juegos según el set actual
         val nuevoState = when (state.setActual) {
             1 -> {
@@ -104,6 +154,9 @@ class MarcadorViewModel @Inject constructor(
         val nuevoSacador = if (state.jugadorQueSaca == "A") "B" else "A"
         state = nuevoState.copy(jugadorQueSaca = nuevoSacador)
 
+        // Guardar la acción
+        guardarAccion(AccionPartido.JuegoGanado(jugador, estadoAnterior))
+
         verificarSet()
     }
 
@@ -127,6 +180,9 @@ class MarcadorViewModel @Inject constructor(
     }
 
     private fun iniciarTieBreak() {
+        // Guardar estado antes del cambio
+        val estadoAnterior = state.copy()
+
         state = state.copy(
             enTieBreak = true,
             puntosTieBreakA = 0,
@@ -135,6 +191,9 @@ class MarcadorViewModel @Inject constructor(
             puntosA = 0,
             puntosB = 0
         )
+
+        // Guardar la acción
+        guardarAccion(AccionPartido.TieBreakIniciado(estadoAnterior))
     }
 
     private fun sumarPuntoTieBreak(jugador: String) {
@@ -188,6 +247,9 @@ class MarcadorViewModel @Inject constructor(
     }
 
     private fun ganarTieBreak(jugador: String) {
+        // Guardar estado antes del cambio
+        val estadoAnterior = state.copy()
+
         // El ganador del tie-break gana el set 7-6
         val nuevoState = when (state.setActual) {
             1 -> {
@@ -223,10 +285,16 @@ class MarcadorViewModel @Inject constructor(
             puntosB = 0
         )
 
+        // Guardar la acción
+        guardarAccion(AccionPartido.TieBreakTerminado(jugador, estadoAnterior))
+
         ganarSet(jugador)
     }
 
     private fun ganarSet(jugador: String) {
+        // Guardar estado antes del cambio
+        val estadoAnterior = state.copy()
+
         // Las propiedades setsGanadosA y setsGanadosB ya reflejan el estado actualizado
         // porque se calculan en base a los sets ya guardados en el estado
         val setsGanadosA = state.setsGanadosA
@@ -250,6 +318,9 @@ class MarcadorViewModel @Inject constructor(
                 puntosB = 0
             )
         }
+
+        // Guardar la acción
+        guardarAccion(AccionPartido.SetGanado(jugador, estadoAnterior))
     }
 
     private fun terminarPartido(ganador: String) {
@@ -287,41 +358,5 @@ class MarcadorViewModel @Inject constructor(
 
     fun reiniciarPartido() {
         state = MarcadorState()
-    }
-
-    fun restarPuntoA() {
-        if (state.enTieBreak) {
-            if (state.puntosTieBreakA > 0) {
-                val nuevoContador = maxOf(0, state.contadorSaquesTieBreak - 1)
-                val nuevoSacador = if (nuevoContador == 0) "A" else calcularSacadorTieBreak(nuevoContador)
-                state = state.copy(
-                    puntosTieBreakA = state.puntosTieBreakA - 1,
-                    contadorSaquesTieBreak = nuevoContador,
-                    jugadorQueSaca = nuevoSacador
-                )
-            }
-        } else {
-            if (state.puntosA > 0) {
-                state = state.copy(puntosA = state.puntosA - 1)
-            }
-        }
-    }
-
-    fun restarPuntoB() {
-        if (state.enTieBreak) {
-            if (state.puntosTieBreakB > 0) {
-                val nuevoContador = maxOf(0, state.contadorSaquesTieBreak - 1)
-                val nuevoSacador = if (nuevoContador == 0) "A" else calcularSacadorTieBreak(nuevoContador)
-                state = state.copy(
-                    puntosTieBreakB = state.puntosTieBreakB - 1,
-                    contadorSaquesTieBreak = nuevoContador,
-                    jugadorQueSaca = nuevoSacador
-                )
-            }
-        } else {
-            if (state.puntosB > 0) {
-                state = state.copy(puntosB = state.puntosB - 1)
-            }
-        }
     }
 }
