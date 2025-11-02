@@ -49,6 +49,15 @@ fun AppNavigation(
                 },
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onRevanche = { jugadorA: String, jugadorB: String, sacadorInicial: String ->
+                    // Navegamos al mismo MarcadorScreen pero con los mismos parámetros
+                    // Esto reinicia el marcador pero mantiene los equipos
+                    val route = "marcador/$jugadorA/$jugadorB/$sacadorInicial"
+                    navController.navigate(route) {
+                        // Eliminamos la instancia actual del stack para evitar acumulación
+                        popUpTo(Screen.Marcador.route) { inclusive = true }
+                    }
                 }
             )
         }

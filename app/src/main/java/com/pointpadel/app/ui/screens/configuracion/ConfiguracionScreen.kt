@@ -1,5 +1,6 @@
 package com.pointpadel.app.ui.screens.configuracion
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -14,7 +15,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.pointpadel.app.ui.theme.PadelAccentOrange
 import com.pointpadel.app.ui.theme.PadelPrimaryGreen
 import com.pointpadel.app.ui.theme.PadelSecondaryBlue
 
@@ -61,10 +61,17 @@ fun ConfiguracionScreen(
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
 
+                // Límite de caracteres para nombres
+                val maxNombreLength = 25
+
                 // Campos de entrada
                 OutlinedTextField(
                     value = state.jugadorA_nombre,
-                    onValueChange = { viewModel.actualizarJugadorA(it) },
+                    onValueChange = {
+                        if (it.length <= maxNombreLength) {
+                            viewModel.actualizarJugadorA(it)
+                        }
+                    },
                     label = { Text("🎾 Equipo A", fontWeight = FontWeight.Medium) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -73,13 +80,25 @@ fun ConfiguracionScreen(
                         focusedBorderColor = PadelPrimaryGreen,
                         focusedLabelColor = PadelPrimaryGreen
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            text = "${state.jugadorA_nombre.length} / $maxNombreLength",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
+                    }
                 )
 
                 OutlinedTextField(
                     value = state.jugadorB_nombre,
-                    onValueChange = { viewModel.actualizarJugadorB(it) },
-                    label = { Text("🏆 Equipo B", fontWeight = FontWeight.Medium) },
+                    onValueChange = {
+                        if (it.length <= maxNombreLength) {
+                            viewModel.actualizarJugadorB(it)
+                        }
+                    },
+                    label = { Text("🎾 Equipo B", fontWeight = FontWeight.Medium) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 20.dp),
@@ -87,7 +106,15 @@ fun ConfiguracionScreen(
                         focusedBorderColor = PadelPrimaryGreen,
                         focusedLabelColor = PadelPrimaryGreen
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            text = "${state.jugadorB_nombre.length} / $maxNombreLength",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
+                    }
                 )
 
                 // Selección de quien saca primero
@@ -203,42 +230,6 @@ fun ConfiguracionScreen(
                     }
                 }
 
-                // Información del formato
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = PadelAccentOrange.copy(alpha = 0.1f)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "📋 FORMATO DEL PARTIDO",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = PadelAccentOrange,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        Text(
-                            text = "🥇 Gana quien alcance 2 sets",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "⚔️ Máximo 3 sets por partido (2-0 o 2-1)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-
                 // Botón de inicio
                 Button(
                     onClick = {
@@ -271,29 +262,22 @@ fun ConfiguracionScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Botón de historial
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = PadelSecondaryBlue
+        OutlinedButton(
+            onClick = onNavigateToHistorial,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp), // Misma altura que el botón primario
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = PadelSecondaryBlue
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            border = BorderStroke(2.dp, PadelSecondaryBlue)
         ) {
-            Button(
-                onClick = onNavigateToHistorial,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent
-                )
-            ) {
-                Text(
-                    "📊 Ver Historial",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = androidx.compose.ui.graphics.Color.White
-                )
-            }
+            Text(
+                "📊 Ver Historial",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

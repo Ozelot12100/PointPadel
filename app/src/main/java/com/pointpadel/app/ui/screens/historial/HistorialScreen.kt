@@ -163,7 +163,7 @@ fun HistorialScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    StatItem("🏆", "Partidos", partidos.size.toString())
+                    StatItem("🎾", "Partidos", partidos.size.toString())
                     StatItem("📈", "Últimos 7 días", partidos.count {
                         System.currentTimeMillis() - it.fecha < 7 * 24 * 60 * 60 * 1000
                     }.toString())
